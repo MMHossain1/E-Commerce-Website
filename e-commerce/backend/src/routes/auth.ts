@@ -20,10 +20,7 @@ const loginSchema = z.object({
 });
 
 const googleAuthSchema = z.object({
-  googleId: z.string(),
-  email: z.string().email(),
-  firstName: z.string(),
-  lastName: z.string(),
+  credential: z.string(),
 });
 
 const changePasswordSchema = z.object({

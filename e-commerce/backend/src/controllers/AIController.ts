@@ -17,6 +17,12 @@ export class AIController {
     );
     res.json({ recommendations });
   });
+
+  getCheckoutGuidance = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { cartItems } = req.body;
+    const tips = await aiService.getCheckoutGuidance(cartItems || []);
+    res.json({ tips });
+  });
 }
 
 export const aiController = new AIController();

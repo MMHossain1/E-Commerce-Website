@@ -10,7 +10,6 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
     const token = Cookies.get('access_token');
@@ -22,122 +21,102 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       try {
         const refreshToken = Cookies.get('refresh_token');
         if (refreshToken) {
-          const response = await axios.post(`${API_URL}/auth/refresh/`, {
-            refresh_token: refreshToken,
+          const response = await axios.post(`${API_URL}/auth/refresh`, {
+            refreshToken,
           });
-          
+
           const { access, refresh } = response.data.tokens;
-          Cookies.set('access_token', access, { expires: 1/1440 }); // 1 minute
+          Cookies.set('access_token', access, { expires: 1 / 1440 });
           Cookies.set('refresh_token', refresh, { expires: 1 });
-          
+
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return api(originalRequest);
         }
-      } catch (refreshError) {
+      } catch {
         Cookies.remove('access_token');
         Cookies.remove('refresh_token');
         window.location.href = '/auth/login';
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
 
 export default api;
 
-// Auth API
 export const authAPI = {
-  register: (data: { username: string; email: string; password: string; password_confirm: string; first_name?: string; last_name?: string }) =>
-    api.post('/auth/register/', data),
-  
+  register: (data: { username: string; email: string; password: string; firstName?: string; lastName?: string }) =>
+    api.post('/auth/register', data),
+
   login: (data: { username: string; password: string }) =>
-    api.post('/auth/login/', data),
-  
-  google: (token: string) =>
-    api.post('/auth/google/', { token }),
-  
-  logout: (refreshToken: string) =>
-    api.post('/auth/logout/', { refresh_token: refreshToken }),
-  
+    api.post('/auth/login', data),
+
+  google: (credential: string) =>
+    api.post('/auth/google', { credential }),
+
   me: () =>
-    api.get('/auth/me/'),
-  
-  changePassword: (data: { old_password: string; new_password: string }) =>
-    api.post('/auth/change_password/', data),
-  
+    api.get('/auth/me'),
+
+  changePassword: (data: { oldPassword: string; newPassword: string }) =>
+    api.post('/auth/change-password', data),
+
   updateProfile: (data: any) =>
-    api.put('/auth/profile/', data),
+    api.put('/auth/profile', data),
 };
 
-// Products API
 export const productsAPI = {
   getAll: (params?: { category?: string; search?: string; page?: number }) =>
-    api.get('/products/', { params }),
-  
-  getOne: (id: number) =>
-    api.get(`/products/${id}/`),
-  
+    api.get('/products', { params }),
+
+  getOne: (id: string) =>
+    api.get(`/products/${id}`),
+
   getFeatured: () =>
-    api.get('/products/featured/'),
-  
+    api.get('/products/featured'),
+
   getCategories: () =>
-    api.get('/categories/'),
-  
+    api.get('/categories'),
+
   getCategoryProducts: (slug: string) =>
-    api.get(`/categories/${slug}/products/`),
+    api.get(`/categories/${slug}`),
 };
 
-// Orders API
 export const ordersAPI = {
   create: (data: any) =>
-    api.post('/orders/', data),
-  
+    api.post('/orders', data),
+
+  createPaymentIntent: (data: { amount: number; orderId: string }) =>
+    api.post('/orders/payment/intent', data),
+
+  updatePaymentStatus: (data: { orderId: string; paymentIntentId: string; status: string }) =>
+    api.post('/orders/payment/status', data),
+
   getAll: () =>
-    api.get('/orders/'),
-  
-  getOne: (id: number) =>
-    api.get(`/orders/${id}/`),
+    api.get('/orders'),
+
+  getOne: (id: string) =>
+    api.get(`/orders/${id}`),
 };
 
-// Payments API
-export const paymentsAPI = {
-  createPaymentIntent: (data: { amount: number; currency?: string; metadata?: any }) =>
-    api.post('/payments/create_payment_intent/', data),
-  
-  createCheckoutSession: (data: { line_items: any[]; success_url: string; cancel_url: string; customer_email?: string }) =>
-    api.post('/payments/create_checkout_session/', data),
-  
-  getPaymentMethods: () =>
-    api.get('/payments/payment_methods/'),
-  
-  attachPaymentMethod: (paymentMethodId: string) =>
-    api.post('/payments/attach_payment_method/', { payment_method_id: paymentMethodId }),
-};
-
-// AI Assistant API
 export const aiAPI = {
   chat: (message: string, context?: any) =>
-    api.post('/ai/chat/', { message, context }),
-  
-  recommend: (data?: { product_id?: number; category?: string; preferences?: any }) =>
-    api.post('/ai/recommend/', data || {}),
-  
-  checkoutGuidance: (cartItems: any[], userPreferences?: any) =>
-    api.post('/ai/checkout_guidance/', { cart_items: cartItems, user_preferences: userPreferences || {} }),
-  
-  searchAssist: (query: string, category?: string) =>
-    api.get('/ai/search_assist/', { params: { q: query, category } }),
+    api.post('/ai/chat', { message, context }),
+
+  getRecommendations: (params?: { productId?: string; category?: string }) =>
+    api.get('/ai/recommendations', { params }),
+
+  getCheckoutGuidance: (cartItems: any[]) =>
+    api.post('/ai/checkout-guidance', { cartItems }),
 };

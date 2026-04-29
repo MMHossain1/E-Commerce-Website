@@ -6,5 +6,6 @@ const router = Router();
 
 router.post('/chat', optionalAuthMiddleware, aiController.chat);
 router.get('/recommendations', aiController.getRecommendations);
+router.post('/checkout-guidance', aiController.getCheckoutGuidance);
 
 export default router;

@@ -15,8 +15,8 @@ export class AuthController {
   });
 
   googleAuth = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { googleId, email, firstName, lastName } = req.body;
-    const result = await authService.googleAuth(googleId, email, firstName, lastName);
+    const { credential } = req.body;
+    const result = await authService.googleAuth(credential);
     res.json(result);
   });
 

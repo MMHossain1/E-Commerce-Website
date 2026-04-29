@@ -3,11 +3,11 @@ import { persist } from 'zustand/middleware';
 import Cookies from 'js-cookie';
 
 interface User {
-  id: number;
+  _id: string;
   username: string;
   email: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
 }
 
 interface CartItem {

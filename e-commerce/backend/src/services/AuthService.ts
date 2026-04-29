@@ -1,8 +1,12 @@
+import { OAuth2Client } from 'google-auth-library';
 import { User } from '../models/User';
 import { generateTokens, verifyRefreshToken } from '../utils/jwt';
 import { hashPassword, comparePassword } from '../utils/password';
 import { AppError } from '../utils/errors';
 import { AuthPayload, User as IUser } from '../types';
+import { config } from '../config';
+
+const googleClient = new OAuth2Client(config.googleClientId);
 
 export class AuthService {
   async register(data: {
@@ -64,7 +68,24 @@ export class AuthService {
     };
   }
 
-  async googleAuth(googleId: string, email: string, firstName: string, lastName: string): Promise<AuthPayload> {
+  async googleAuth(credential: string): Promise<AuthPayload> {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: config.googleClientId,
+    }).catch(() => {
+      throw new AppError(401, 'Invalid Google credential');
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.sub || !payload.email) {
+      throw new AppError(401, 'Invalid Google token payload');
+    }
+
+    const googleId = payload.sub;
+    const email = payload.email;
+    const firstName = payload.given_name || '';
+    const lastName = payload.family_name || '';
+
     let user = await User.findOne({ googleId });
 
     if (!user) {
